@@ -246,8 +246,8 @@ class PDFCleanerApp:
     def __init__(self, root):
         self.root = root
         self.root.title("PDF İşaret Temizleyici v2.1")
-        self.root.geometry("750x850")
-        self.root.resizable(False, False)
+        self.root.geometry("700x600")
+        self.root.resizable(True, True)
         
         self.color_manager = ColorManager()
         self.cleaner = PDFMarkCleaner(self.color_manager)
@@ -258,60 +258,79 @@ class PDFCleanerApp:
     def setup_gui(self):
         """GUI oluştur"""
         
+        # Ana Canvas ve Scrollbar
+        main_frame = tk.Frame(self.root)
+        main_frame.pack(fill="both", expand=True)
+        
+        canvas = tk.Canvas(main_frame)
+        scrollbar = ttk.Scrollbar(main_frame, orient="vertical", command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas)
+        
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        
         # Başlık
         title = tk.Label(
-            self.root,
+            scrollable_frame,
             text="PDF İşaret Temizleyici",
-            font=("Arial", 18, "bold"),
+            font=("Arial", 16, "bold"),
             fg="#2c3e50"
         )
-        title.pack(pady=15)
+        title.pack(pady=10)
         
         # PDF Seçim Frame
         frame1 = tk.LabelFrame(
-            self.root,
+            scrollable_frame,
             text="PDF Seç",
             font=("Arial", 10, "bold"),
             padx=10,
-            pady=10
+            pady=8
         )
-        frame1.pack(padx=15, pady=10, fill="x")
+        frame1.pack(padx=12, pady=8, fill="x")
         
         self.entry = tk.Entry(
             frame1,
-            width=70,
-            font=("Arial", 9)
+            width=50,
+            font=("Arial", 8)
         )
-        self.entry.pack(side="left", fill="x", expand=True, padx=5)
+        self.entry.pack(side="left", fill="x", expand=True, padx=3)
         
         btn_select = tk.Button(
             frame1,
             text="Gözat",
-            width=10,
+            width=8,
             command=self.pdf_sec,
             bg="#3498db",
             fg="white",
-            font=("Arial", 9)
+            font=("Arial", 8)
         )
-        btn_select.pack(side="left", padx=5)
+        btn_select.pack(side="left", padx=3)
         
         # Renk Seçim Frame
         frame2 = tk.LabelFrame(
-            self.root,
-            text="Temizlenecek Renkler (Tümü varsayılan olarak seçili)",
+            scrollable_frame,
+            text="Temizlenecek Renkler",
             font=("Arial", 10, "bold"),
             padx=10,
-            pady=10
+            pady=8
         )
-        frame2.pack(padx=15, pady=10, fill="x")
+        frame2.pack(padx=12, pady=8, fill="x")
         
         self.color_vars = {}
         colors_grid = tk.Frame(frame2)
         colors_grid.pack()
         
         for i, (key, color) in enumerate(self.color_manager.colors.items()):
-            row = i // 2
-            col = i % 2
+            row = i // 3
+            col = i % 3
             
             var = tk.BooleanVar(value=color.enabled)
             self.color_vars[key] = var
@@ -321,29 +340,31 @@ class PDFCleanerApp:
                 text=color.name,
                 variable=var,
                 command=lambda k=key: self.update_color_status(k),
-                font=("Arial", 9)
+                font=("Arial", 8)
             )
-            check.grid(row=row, column=col, sticky="w", padx=20, pady=5)
+            check.grid(row=row, column=col, sticky="w", padx=10, pady=3)
         
-        # Kalite Seçim Frame
+        # Ayarlar Frame
         frame3 = tk.LabelFrame(
-            self.root,
+            scrollable_frame,
             text="İşlem Ayarları",
             font=("Arial", 10, "bold"),
             padx=10,
-            pady=10
+            pady=8
         )
-        frame3.pack(padx=15, pady=10, fill="x")
+        frame3.pack(padx=12, pady=8, fill="x")
         
         # Kalite
         quality_frame = tk.Frame(frame3)
-        quality_frame.pack(fill="x", pady=5)
+        quality_frame.pack(fill="x", pady=4)
         
         tk.Label(
             quality_frame,
             text="Görüntü Kalitesi:",
-            font=("Arial", 9)
-        ).pack(side="left", padx=5)
+            font=("Arial", 8),
+            width=15,
+            anchor="w"
+        ).pack(side="left", padx=3)
         
         self.quality_var = tk.IntVar(value=2)
         quality_scale = tk.Scale(
@@ -352,26 +373,29 @@ class PDFCleanerApp:
             to=3,
             orient="horizontal",
             variable=self.quality_var,
-            length=200
+            length=150,
+            font=("Arial", 7)
         )
-        quality_scale.pack(side="left", padx=5)
+        quality_scale.pack(side="left", padx=3)
         
         tk.Label(
             quality_frame,
-            text="1=Hızlı, 3=Yüksek Kalite",
-            font=("Arial", 8),
+            text="1=Hızlı, 3=Yüksek",
+            font=("Arial", 7),
             fg="gray"
-        ).pack(side="left", padx=5)
+        ).pack(side="left", padx=3)
         
         # Threshold (Duyarlılık)
         threshold_frame = tk.Frame(frame3)
-        threshold_frame.pack(fill="x", pady=5)
+        threshold_frame.pack(fill="x", pady=4)
         
         tk.Label(
             threshold_frame,
             text="Temizleme Duyarlılığı:",
-            font=("Arial", 9)
-        ).pack(side="left", padx=5)
+            font=("Arial", 8),
+            width=15,
+            anchor="w"
+        ).pack(side="left", padx=3)
         
         self.threshold_var = tk.DoubleVar(value=0.5)
         threshold_scale = tk.Scale(
@@ -381,88 +405,92 @@ class PDFCleanerApp:
             orient="horizontal",
             variable=self.threshold_var,
             resolution=0.1,
-            length=200
+            length=150,
+            font=("Arial", 7)
         )
-        threshold_scale.pack(side="left", padx=5)
+        threshold_scale.pack(side="left", padx=3)
         
         tk.Label(
             threshold_frame,
             text="0.3=Agresif, 1.0=Hafif",
-            font=("Arial", 8),
+            font=("Arial", 7),
             fg="gray"
-        ).pack(side="left", padx=5)
+        ).pack(side="left", padx=3)
         
         # İlerleme Çubuğu
+        progress_frame = tk.Frame(frame3)
+        progress_frame.pack(fill="x", pady=4)
+        
         self.progress = ttk.Progressbar(
-            frame3,
+            progress_frame,
             mode='determinate',
             length=300
         )
-        self.progress.pack(fill="x", pady=5)
+        self.progress.pack(fill="x", padx=3)
         
         self.progress_label = tk.Label(
-            frame3,
+            progress_frame,
             text="Hazır",
-            font=("Arial", 9),
+            font=("Arial", 7),
             fg="gray"
         )
         self.progress_label.pack()
         
         # Bilgi Frame
         frame_info = tk.LabelFrame(
-            self.root,
+            scrollable_frame,
             text="Bilgilendirme",
-            font=("Arial", 10, "bold"),
-            padx=10,
-            pady=10
+            font=("Arial", 9, "bold"),
+            padx=8,
+            pady=6
         )
-        frame_info.pack(padx=15, pady=10, fill="both", expand=True)
+        frame_info.pack(padx=12, pady=8, fill="both")
         
         self.info_text = tk.Text(
             frame_info,
-            height=5,
-            width=80,
-            font=("Arial", 9),
-            bg="#ecf0f1",
-            state="disabled"
+            height=3,
+            width=60,
+            font=("Arial", 7),
+            bg="#ecf0f1"
         )
-        self.info_text.pack(fill="both", expand=True)
+        self.info_text.pack(fill="both")
+        self.info_text.config(state="disabled")
         
         # Butonlar Frame
-        frame4 = tk.Frame(self.root)
-        frame4.pack(pady=15)
+        frame4 = tk.Frame(scrollable_frame)
+        frame4.pack(pady=10)
         
         self.btn_clean = tk.Button(
             frame4,
             text="Temizle",
-            width=20,
+            width=15,
             bg="#27ae60",
             fg="white",
-            font=("Arial", 10, "bold"),
+            font=("Arial", 9, "bold"),
             command=self.temizle_thread,
             cursor="hand2"
         )
-        self.btn_clean.pack(side="left", padx=5)
+        self.btn_clean.pack(side="left", padx=3)
         
         self.btn_cancel = tk.Button(
             frame4,
             text="İptal",
-            width=20,
+            width=15,
             bg="#e74c3c",
             fg="white",
-            font=("Arial", 10, "bold"),
+            font=("Arial", 9, "bold"),
             command=self.cancel_operation,
             cursor="hand2",
             state="disabled"
         )
-        self.btn_cancel.pack(side="left", padx=5)
+        self.btn_cancel.pack(side="left", padx=3)
         
-        self.add_info("✓ Uygulama hazır\n✓ Bir PDF seçin ve Temizle butonuna tıklayın\n✓ Tüm renkler varsayılan olarak seçilidir")
+        self.add_info("✓ Uygulama hazır\n✓ PDF seçin ve Temizle'ye tıklayın")
     
     def add_info(self, text: str):
         """Bilgi ekle"""
         self.info_text.config(state="normal")
-        self.info_text.insert(tk.END, text + "\n\n")
+        self.info_text.insert(tk.END, text + "\n")
         self.info_text.see(tk.END)
         self.info_text.config(state="disabled")
     
@@ -487,7 +515,7 @@ class PDFCleanerApp:
         progress_percent = (current / total) * 100
         self.progress['value'] = progress_percent
         self.progress_label.config(
-            text=f"İşleniyor: {current}/{total} sayfa ({progress_percent:.1f}%)"
+            text=f"{current}/{total} sayfa ({progress_percent:.0f}%)"
         )
         self.root.update_idletasks()
     
@@ -495,7 +523,7 @@ class PDFCleanerApp:
         """İşlemi iptal et"""
         self.cleaner.cancel_operation()
         self.btn_cancel.config(state="disabled")
-        self.add_info("⚠ İşlem iptal ediliyor...")
+        self.add_info("⚠ İptal ediliyor...")
     
     def temizle_thread(self):
         """Temizleme işlemini başlat (thread'de)"""
@@ -547,12 +575,11 @@ class PDFCleanerApp:
                 self.progress['value'] = 100
                 self.progress_label.config(text="✓ Tamamlandı!")
                 
-                self.add_info(f"✓ PDF başarıyla temizlendi!\n✓ Çıktı: {output_path}")
+                self.add_info(f"✓ Başarılı!\n✓ {os.path.basename(output_path)}")
                 
                 messagebox.showinfo(
                     "Başarılı ✓",
-                    f"PDF başarıyla temizlendi!\n\n"
-                    f"Çıktı:\n{output_path}"
+                    f"PDF başarıyla temizlendi!\n\n{output_path}"
                 )
                 
                 logger.info(f"İşlem tamamlandı: {output_path}")
@@ -562,13 +589,8 @@ class PDFCleanerApp:
         except Exception as e:
             error_msg = str(e)
             logger.error(f"Temizleme hatası: {error_msg}")
-            
-            self.add_info(f"✗ Hata: {error_msg}")
-            
-            messagebox.showerror(
-                "Hata ✗",
-                f"PDF işlenirken hata oluştu:\n\n{error_msg}"
-            )
+            self.add_info(f"✗ Hata: {error_msg[:40]}")
+            messagebox.showerror("Hata ✗", f"Hata: {error_msg}")
         
         finally:
             self.is_processing = False
